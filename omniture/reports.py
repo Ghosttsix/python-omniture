@@ -1,7 +1,7 @@
 # encoding: utf-8
 
-from elements import Value, Element, Segment
-import utils
+from .elements import Value, Element, Segment
+from omniture import utils
 import logging
 from collections import OrderedDict
 from datetime import datetime
@@ -14,7 +14,7 @@ class InvalidReportError(Exception):
     invalid
     """
     def normalize(self, error):
-        print 'error', error
+        print('error', error)
         return {
             'error': error.get('error'),
             'error_description': error.get('error_description'),
@@ -26,7 +26,8 @@ class InvalidReportError(Exception):
         error = self.normalize(error)
         message = "{error}: {error_description} ({error_uri})".format(**error)
         super(InvalidReportError, self).__init__(message)
-        
+
+
 class ReportNotReadyError(Exception):
     """ Exception that is raised when a report is not ready to be downloaded
     """
@@ -74,7 +75,7 @@ class Report(object):
         else:
             self.segments = None
 
-        #Set as none until it is actually used
+        # Set as none until it is actually used
         self.dict_data = None
         self.pandas_data = None
 
@@ -83,7 +84,7 @@ class Report(object):
         """ Returns the report data as a set of dicts for easy quering
             It generates the dicts on the 1st call then simply returns the reference to the data in subsequent calls
         """
-        #If the data hasn't been generate it generate the data
+        # If the data hasn't been generate it generate the data
         if self.dict_data == None:
             self.dict_data = self.parse_rows(self.report['data'])
             
@@ -95,29 +96,28 @@ class Report(object):
         
         This method is recursive.
         """
-        #self.log.debug("Level %s, Upperlevels %s, Row Type %s, Row: %s", level,upperlevels, type(row), row)
+        # self.log.debug("Level %s, Upperlevels %s, Row Type %s, Row: %s", level,upperlevels, type(row), row)
         data = {}
         data_set = []
         
-        #merge in the upper levels
+        # merge in the upper levels
         if upperlevels != None:
             data.update(upperlevels)
-            
-        
+
         if type(row) == list:
             for r in row:
-                #on the first call set add to the empty list 
+                # on the first call set add to the empty list
                 pr = self.parse_rows(r,level, data.copy())
                 if type(pr) == dict:
                     data_set.append(pr)
-                #otherwise add to the existing list
+                # otherwise add to the existing list
                 else:
                     data_set.extend(pr)
                     
-        #pull out the metrics from the lowest level
+        # pull out the metrics from the lowest level
         if type(row) == dict:  
-            #pull out any relevant data from the current record
-            #Handle datetime isn't in the elements list for trended reports
+            # pull out any relevant data from the current record
+            # Handle datetime isn't in the elements list for trended reports
             if level == 0 and self.type == "trended":
                 element = "datetime"
             elif self.type == "trended":
@@ -126,23 +126,22 @@ class Report(object):
                 element = str(self.elements[level].id)
             
             if element == "datetime":
-                data[element] = datetime(int(row.get('year',0)),int(row.get('month',0)),int(row.get('day',0)),int(row.get('hour',0)))
+                data[element] = datetime(int(row.get('year', 0)), int(row.get('month', 0)), int(row.get('day', 0)),
+                                         int(row.get('hour', 0)))
                 data["datetime_friendly"] = str(row['name'])
             else:
                 data[element] = row['name'].encode('utf-8')
-            #parse out any breakdowns and add to the data set    
+            # parse out any breakdowns and add to the data set
             if row.has_key('breakdown'):
                 data_set.extend(self.parse_rows(row['breakdown'], level+1, data))
             elif row.has_key('counts'):
                 for index, metric in enumerate(row['counts']):
-                        #decide what type of event
+                        # decide what type of event
                         if self.metrics[index].decimals > 0: 
                             data[str(self.metrics[index].id)] = float(metric)
                         else:
                             data[str(self.metrics[index].id)] = int(metric)
-        
-            
-                                
+
         if len(data_set)>0: 
             return data_set
         else:   
@@ -160,12 +159,10 @@ class Report(object):
             self.pandas_data = self.to_dataframe()
         
         return self.pandas_data
-    
-    
+
     def to_dataframe(self):
         import pandas as pd
         return pd.DataFrame.from_dict(self.data)
-        
 
     def serialize(self, verbose=False):
         if verbose:
@@ -195,14 +192,14 @@ class Report(object):
     
     def __div__(self):
         """ Give sensible options for Tab Completion mostly for iPython """
-        return ['data','dataframe', 'metrics','elements', 'segments', 'period', 'type', 'timing']
+        return ['data', 'dataframe', 'metrics', 'elements', 'segments', 'period', 'type', 'timing']
     
     def _repr_html_(self):
         """ Format in HTML for iPython Users """
         html = "<table>"
         for index, item in enumerate(self.data):
             html += "<tr>"
-            #populate header Row
+            # populate header Row
             if index < 1:
                 html += "<tr>"
                 if item.has_key('datetime'):
@@ -212,7 +209,7 @@ class Report(object):
                         html += "<td><b>{0}<b></td>".format(key)
                 html += "</tr><tr>"
             
-            #Make sure date time is alway listed first
+            # Make sure date time is alway listed first
             if item.has_key('datetime'):
                 html += "<td>{0}</td>".format(item['datetime'])
             for key, value in item.iteritems():
@@ -221,7 +218,7 @@ class Report(object):
         return html
     
     def __str__(self):
-        return json.dumps(self.raw,indent=4, separators=(',', ': '))
+        return json.dumps(self.raw, indent=4, separators=(',', ': '))
 
 Report.method = "Queue"
     

@@ -4,9 +4,8 @@ import time
 from copy import copy
 import functools
 from dateutil.relativedelta import relativedelta
-from elements import Value, Element, Segment
-import reports
-import utils
+from .elements import Value, Element, Segment
+from omniture import reports, utils
 import json
 import logging
 import sys
@@ -32,7 +31,7 @@ class Query(object):
     Making it easy to create a report.
     
     To see the raw definition use 
-    >>> print report
+    >>> print(report)
     """
 
     GRANULARITY_LEVELS = ['hour', 'day', 'week', 'month', 'quarter', 'year']
@@ -42,8 +41,8 @@ class Query(object):
         self.log = logging.getLogger(__name__)
         self.suite = suite
         self.raw = {}
-        #Put the report suite in so the user can print
-        #the raw query and have it work as is
+        # Put the report suite in so the user can print
+        # the raw query and have it work as is
         self.raw['reportSuiteID'] = str(self.suite.id)
         self.id = None
         self.report = reports.Report
@@ -158,14 +157,13 @@ class Query(object):
         # It would appear to me that 'segment_id' has a strict subset
         # of the functionality of 'segments', but until I find out for
         # sure, I'll provide both options.
-        if not self.raw.has_key('segments'):
+        if not self.raw.get('segments', None):
             self.raw['segments'] = []
         
         if segments:
             self.raw['segments'].append(self._serialize_values(segments, 'segments'))
         elif segment:
-            self.raw['segments'].append({"id":self._normalize_value(segment,
-                                                           'segments').id})
+            self.raw['segments'].append({"id": self._normalize_value(segment, 'segments').id})
         elif kwargs:
             self.raw['segments'].append(kwargs)
         else:
@@ -183,16 +181,16 @@ class Query(object):
         After the first element, each additional element is considered
             a breakdown
         """
-        if self.raw.get('elements', None) == None:
+        if not self.raw.get('elements', None):
             self.raw['elements'] = []
 
         element = self._serialize_value(element, 'elements')
 
-        if kwargs != None:
+        if kwargs:
             element.update(kwargs)
         self.raw['elements'].append(element)
 
-        #TODO allow this method to accept a list
+        # TODO allow this method to accept a list
         return self
 
     @immutable
@@ -216,11 +214,11 @@ class Query(object):
         This method is intended to be called multiple time.
             Each time a metric will be added to the report
         """
-        if self.raw.get('metrics', None) == None:
+        if not self.raw.get('metrics', None):
             self.raw['metrics'] = []
         self.raw['metrics'].append(self._serialize_value(metric, 'metrics'))
-        #self.raw['metrics'] = self._serialize_values(metric, 'metrics')
-        #TODO allow this metric to accept a list
+        # self.raw['metrics'] = self._serialize_values(metric, 'metrics')
+        # TODO allow this metric to accept a list
         return self
     
     def metrics(self, *args):
@@ -271,7 +269,7 @@ class Query(object):
         """ Submits the report to the Queue on the Adobe side. """
         q = self.build()
         self.log.debug("Suite Object: %s  Method: %s, Query %s",
-                       self.suite, self.report.method, q)
+                       self.suite, self.report.method, q) # TODO track down this reference
         self.id = self.suite.request('Report',
                                      self.report.method,
                                      q)['reportID']
@@ -285,18 +283,18 @@ class Query(object):
                 heartbeat()
             time.sleep(interval)
 
-            #Loop until the report is done
-            #(No longer raises the ReportNotReadyError)
+            # Loop until the report is done
+            # (No longer raises the ReportNotReadyError)
             try:
                 response = fn()
                 status = 'done'
                 return response
             except reports.ReportNotReadyError:
                 status = 'not ready'
-               # if not soak and status not in ['not ready', 'done', 'ready']:
-                    #raise reports.InvalidReportError(response)
+                # if not soak and status not in ['not ready', 'done', 'ready']:
+                    # raise reports.InvalidReportError(response)
 
-            #Use a back off up to five minutes to play nice with the APIs
+            # Use a back off up to five minutes to play nice with the APIs
             if interval < 300:
                 interval = round(interval * 1.5)
             self.log.debug("Check Interval: %s seconds", interval)
@@ -315,7 +313,7 @@ class Query(object):
         response = self.probe(get_report, heartbeat, interval)
         return self.report(response, self)
 
-    #shortcut to run a report immediately
+    # shortcut to run a report immediately
     def run(self, defaultheartbeat=True, heartbeat=None, interval=1):
         """Shortcut for sync(). Runs the current report synchronously. """
         if defaultheartbeat == True:
@@ -361,7 +359,7 @@ class Query(object):
     def _repr_html_(self):
         """ Format in HTML for iPython Users """
         html = "Current Report Settings</br>"
-        for key, value in self.raw.iteritems():
+        for key, value in self.raw:
             html += "<b>{0}</b>: {1} </br>".format(key, value)
         if self.id:
             html += "This report has been submitted</br>"
@@ -370,6 +368,6 @@ class Query(object):
     
     def __dir__(self):
         """ Give sensible options for Tab Completion mostly for iPython """
-        return ['async','breakdown','cancel','clone','currentData', 'element',
-                'filter', 'granularity', 'id','json' ,'metric', 'queue', 'range', 'raw', 'report',
+        return ['async', 'breakdown', 'cancel', 'clone', 'currentData', 'element',
+                'filter', 'granularity', 'id', 'json', 'metric', 'queue', 'range', 'raw', 'report',
                 'request', 'run', 'set', 'sortBy', 'suite']

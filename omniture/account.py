@@ -1,13 +1,12 @@
 import requests
 import binascii
 import time
-import sha
+from hashlib import sha1 as sha
 import json
 from datetime import datetime
-from elements import Value, Element, Segment
-from query import Query
-import reports
-import utils
+from .elements import Value, Element, Segment
+from .query import Query
+from omniture import reports, utils
 import logging
 
 

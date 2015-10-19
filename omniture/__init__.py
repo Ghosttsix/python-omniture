@@ -1,16 +1,18 @@
 # encoding: utf-8
 
-from account import Account, Suite
-from elements import Value, Element, Segment
-from query import Query
-from reports import InvalidReportError, Report, DataWarehouseReport
+from .account import Account, Suite
+from .elements import Value, Element, Segment
+from .query import Query
+from .reports import InvalidReportError, Report, DataWarehouseReport
+import omniture.utils
 import os
 import json
-import logging.config
+import logging
+
 
 def authenticate(username, secret=None, endpoint=Account.DEFAULT_ENDPOINT, prefix='', suffix=''):
     """ Authenticate to the Adobe API using WSSE """
-    #setup logging
+    # setup logging
     setup_logging()
     # if no secret is specified, we will assume that instead 
     # we have received a dictionary with credentials (such as
@@ -46,7 +48,8 @@ def sync(queries, heartbeat=None, interval=1):
         omniture.queue(query)
         omniture.sync(query)
         
-    The interval will operate under an exponetial decay until it reaches 5 minutes. At which point it will ping every 5 minutes
+    The interval will operate under an exponential decay until it reaches 5 minutes.
+    At which point it will ping every 5 minutes
     """
     
     queue(queries)

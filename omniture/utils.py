@@ -49,7 +49,7 @@ class AddressableList(list):
             html += "<tr>"
             html += i._repr_html_()
             html += "</tr>"
-        html +="</table>"
+        html += "</table>"
         return html
 
     def __str__(self):
@@ -61,12 +61,13 @@ class AddressableList(list):
     def __repr__(self):
         return "<AddressableList>"
 
+
 class AddressableDict(AddressableList):
     def __getitem__(self, key):
         item = super(AddressableDict, self).__getitem__(key)
         return item.value
 
-
+# TODO update for Python 3
 def date(obj):
     if obj is None:
         return None
@@ -91,7 +92,7 @@ def wrap(obj):
 
 def affix(prefix, base, suffix, connector='_'):
     if prefix:
-        prefix = prefix + connector
+        prefix += connector
     else:
         prefix = ''
 
