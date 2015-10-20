@@ -132,9 +132,9 @@ class Report(object):
             else:
                 data[element] = row['name'].encode('utf-8')
             # parse out any breakdowns and add to the data set
-            if row.has_key('breakdown'):
+            if 'breakdown' in row:
                 data_set.extend(self.parse_rows(row['breakdown'], level+1, data))
-            elif row.has_key('counts'):
+            elif 'counts' in row:
                 for index, metric in enumerate(row['counts']):
                         # decide what type of event
                         if self.metrics[index].decimals > 0: 
