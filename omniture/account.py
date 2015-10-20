@@ -1,8 +1,9 @@
 import requests
 import binascii
 import time
-from hashlib import sha1 as sha
+import hashlib
 import json
+from collections import OrderedDict
 from datetime import datetime
 from .elements import Value, Element, Segment
 from .query import Query
@@ -18,7 +19,7 @@ class Account(object):
         """Authentication to make requests."""
         self.log = logging.getLogger(__name__)
         self.username = username
-        self.secret = secret
+        self.secret = str(secret)
         self.endpoint = endpoint
         data = self.request('Company', 'GetReportSuites')['report_suites']
         suites = [Suite(suite['site_title'], suite['rsid'], self) for suite in data]
@@ -36,6 +37,7 @@ class Account(object):
             like to pass to the API
         """
         self.log.info("Request: %s.%s  Parameters: %s", api, method, query)
+
         response = requests.post(
             self.endpoint,
             params={'method': api + '.' + method},
@@ -57,24 +59,27 @@ class Account(object):
             return json_response
 
     def _serialize_header(self, properties):
-        header = []
-        for key, value in properties.items():
-            header.append('{key}="{value}"'.format(key=key, value=value))
-        return ', '.join(header)
+        h = ['{key}="{value}"'.format(key=key, value=value) for key, value in properties.items()]
+        h.sort(reverse=True)
+        return ', '.join(h)
 
     def _build_token(self):
         nonce = str(time.time())
+        created_date = datetime.utcnow().isoformat() + ' Z'
         base64nonce = binascii.b2a_base64(binascii.a2b_qp(nonce))
-        created_date = datetime.utcnow().isoformat() + 'Z'
-        sha_object = sha.new(nonce + created_date + self.secret)
-        password_64 = binascii.b2a_base64(sha_object.digest())
+        digest = binascii.a2b_qp(nonce+created_date+self.secret)
+        sha = hashlib.sha1()
+        sha.update(digest)
+        sha_object = sha.digest()
+        password_64 = binascii.b2a_base64(sha_object)
 
-        properties = {
+        properties = OrderedDict({
             "Username": self.username,
-            "PasswordDigest": password_64.strip(),
-            "Nonce": base64nonce.strip(),
+            "PasswordDigest": password_64.strip().decode('utf-8'),
+            "Nonce": base64nonce.strip().decode('utf-8'),
             "Created": created_date,
-        }
+        })
+
         header = 'UsernameToken ' + self._serialize_header(properties)
 
         return {'X-WSSE': header}
