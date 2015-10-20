@@ -10,7 +10,7 @@ import json
 import logging
 import sys
 
-
+# TODO alter the query methods so they return unicode strings rather than bytes
 
 def immutable(method):
     @functools.wraps(method)
