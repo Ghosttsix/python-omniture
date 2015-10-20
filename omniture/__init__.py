@@ -7,6 +7,7 @@ from .reports import InvalidReportError, Report, DataWarehouseReport
 import omniture.utils
 import os
 import json
+import logging.config
 import logging
 
 
