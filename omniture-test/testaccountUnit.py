@@ -17,7 +17,7 @@ class AccountUnitTest(unittest.TestCase):
         
     def test_suites(self):
         self.assertIsInstance(self.analytics.suites, omniture.utils.AddressableList, "There are no suites being returned")
-        self.assertIsInstance(self.analytics.suites[0], omniture.account.Suite, "There are no suites being returned")
+        self.assertIsInstance(self.analytics.suites[0], omniture.Suite, "There are no suites being returned")
         
     def test_simple_request(self):
         """ simplest request possible. Company.GetEndpoint is not an authenticated method
@@ -57,4 +57,3 @@ class AccountUnitTest(unittest.TestCase):
         
 if __name__ == '__main__':
     unittest.main()
-        
